@@ -3,28 +3,60 @@ import { fechCryptos } from '../api/coinGecko'
 import CryptoCard from '../components/CryptoCard'
 export default function Home() {
 
-    const [cryptolist,setCryptolist]=useState([])
-    const [isloading,setIsloading]=useState(false)
-      const [viewMode, setViewMode] = useState("grid");
+  const [cryptoList, setCryptoList] = useState([]);
+  const [filteredList, setFilteredList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("market_cap_rank");
   const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(()=>{
         fechCryptodata()
     },[])
+ useEffect(()=>{
 
+    filterAndSort()
+
+ },[sortBy,cryptoList])
 
 const fechCryptodata = async ()=>{
-   setIsloading(true)
+   
    try{
      const data = await fechCryptos()
-    setCryptolist(data)
+    setCryptoList(data)
    }catch(err){
     console.log("error happend :",err)
    }finally{
-    setIsloading(false)
+    setIsLoading(false)
    }
 }
+  const filterAndSort = () => {
+    let filtered = cryptoList.filter(
+      (crypto) =>
+        crypto.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price":
+          return a.current_price - b.current_price;
+        case "price_desc":
+          return b.current_price - a.current_price;
+        case "change":
+          return a.price_change_percentage_24h - b.price_change_percentage_24h;
+        case "market_cap":
+          return a.market_cap - b.market_cap;
+        default:
+          return a.market_cap_rank - b.market_cap_rank;
+      }
+    });
+
+    setFilteredList(filtered);
+  };
+
 
   return (
     <>
@@ -56,7 +88,7 @@ const fechCryptodata = async ()=>{
           </button>
         </div>
       </div>
-    {isloading? <div className="loading">
+    {isLoading? <div className="loading">
         <div className="spinner">
             Loading....
         </div>
@@ -64,7 +96,7 @@ const fechCryptodata = async ()=>{
 
   
         {
-            cryptolist.map((crypto,key)=>(
+            filteredList.map((crypto,key)=>(
                 <CryptoCard key={key} crypto={crypto} />
             ))
         }

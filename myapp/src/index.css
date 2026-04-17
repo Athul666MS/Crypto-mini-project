@@ -589,10 +589,12 @@ body {
   .filter-group {
     flex-direction: column;
     align-items: stretch;
+    
   }
 
   .filter-group select {
     width: 100%;
+ 
   }
 
   .view-toggle {
