@@ -17,7 +17,7 @@ export default function Home() {
 
     filterAndSort()
 
- },[sortBy,cryptoList])
+ },[sortBy,cryptoList,searchQuery])
 
 const fechCryptodata = async ()=>{
    
@@ -61,6 +61,23 @@ const fechCryptodata = async ()=>{
   return (
     <>
     <div className="app">
+              <header className="header">
+        <div className="header-content">
+          <div className="logo-section">
+            <h1>🚀 Crypto Tracker</h1>
+            <p>Real-time cryptocurrency prices and market data</p>
+          </div>
+          <div className="search-section">
+            <input
+              type="text"
+              placeholder="Search cryptos..."
+              className="search-input"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
+            />
+          </div>
+        </div>
+      </header>
                <div className="controls">
         <div className="filter-group">
           <label>Sort by:</label>
