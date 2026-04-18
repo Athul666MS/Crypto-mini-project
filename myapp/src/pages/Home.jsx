@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { fechCryptos } from '../api/coinGecko'
 import CryptoCard from '../components/CryptoCard'
-export default function Home() {
 
+export default function Home() {
   const [cryptoList, setCryptoList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -10,26 +10,34 @@ export default function Home() {
   const [sortBy, setSortBy] = useState("market_cap_rank");
   const [searchQuery, setSearchQuery] = useState("");
 
-    useEffect(()=>{
-        fechCryptodata()
-    },[])
- useEffect(()=>{
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-    filterAndSort()
+  useEffect(() => {
+    fetchCryptoData();
+  }, []);
 
- },[sortBy,cryptoList,searchQuery])
+  useEffect(() => {
+    filterAndSort();
+  }, [sortBy, cryptoList, searchQuery]);
 
-const fechCryptodata = async ()=>{
-   
-   try{
-     const data = await fechCryptos()
-    setCryptoList(data)
-   }catch(err){
-    console.log("error happend :",err)
-   }finally{
-    setIsLoading(false)
-   }
-}
+  // ✅ Reset page when filter/search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy]);
+
+  const fetchCryptoData = async () => {
+    try {
+      const data = await fechCryptos();
+      setCryptoList(data);
+    } catch (err) {
+      console.log("error happened:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filterAndSort = () => {
     let filtered = cryptoList.filter(
       (crypto) =>
@@ -57,11 +65,16 @@ const fechCryptodata = async ()=>{
     setFilteredList(filtered);
   };
 
+  // ✅ Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredList.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredList.length / itemsPerPage);
 
   return (
-    <>
     <div className="app">
-              <header className="header">
+      {/* HEADER */}
+      <header className="header">
         <div className="header-content">
           <div className="logo-section">
             <h1>🚀 Crypto Tracker</h1>
@@ -78,10 +91,17 @@ const fechCryptodata = async ()=>{
           </div>
         </div>
       </header>
-               <div className="controls">
+
+      {/* CONTROLS */}
+      <div className="controls">
         <div className="filter-group">
-          <label>Sort by:</label>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <label htmlFor="sort-select">Sort by:</label>
+          <select 
+            id="sort-select"
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
+            className="sort-select"
+          >
             <option value="market_cap_rank">Rank</option>
             <option value="name">Name</option>
             <option value="price">Price (Low to High)</option>
@@ -90,39 +110,81 @@ const fechCryptodata = async ()=>{
             <option value="market_cap">Market Cap</option>
           </select>
         </div>
+
         <div className="view-toggle">
           <button
-            className={viewMode === "grid" ? "active" : ""}
+            className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
             onClick={() => setViewMode("grid")}
+            title="Grid View"
           >
-            Grid
+            ⊞ Grid
           </button>
           <button
-            className={viewMode === "list" ? "active" : ""}
+            className={`view-btn ${viewMode === "list" ? "active" : ""}`}
             onClick={() => setViewMode("list")}
+            title="List View"
           >
-            List
+            ≡ List
           </button>
         </div>
       </div>
-    {isLoading? <div className="loading">
-        <div className="spinner">
-            Loading....
-        </div>
-    </div>   : <div className={`crypto-container ${viewMode}`}>
 
-  
-        {
-            filteredList.map((crypto,key)=>(
-                <CryptoCard key={key} crypto={crypto} />
-            ))
-        }
-    </div> 
-    
-    }
+      {/* CONTENT */}
+      {isLoading ? (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading cryptos...</p>
+        </div>
+      ) : (
+        <>
+          <div className={`crypto-container ${viewMode}`}>
+            {currentItems.length > 0 ? (
+              currentItems.map((crypto) => (
+                <CryptoCard key={crypto.id} crypto={crypto} />
+              ))
+            ) : (
+              <div className="no-results">
+                <p>No cryptocurrencies found matching your search.</p>
+              </div>
+            )}
+          </div>
+
+          {/* PAGINATION */}
+          {filteredList.length > itemsPerPage && (
+            <div className="pagination-container">
+              <div className="pagination">
+                <button
+                  className="pagination-btn pagination-prev"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  title="Previous Page"
+                >
+                  ← Prev
+                </button>
+
+                <div className="pagination-info">
+                  <span className="page-number">Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong></span>
+                  <span className="items-info">({indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredList.length)} of {filteredList.length})</span>
+                </div>
+
+                <button
+                  className="pagination-btn pagination-next"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  title="Next Page"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* FOOTER */}
+      <footer className="footer">
+        <p>Data provided by CoinGecko API • Updated every 30 seconds</p>
+      </footer>
     </div>
-    
-    
-    </>
-  )
+  );
 }
